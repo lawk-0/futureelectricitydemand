@@ -1,0 +1,74 @@
+project:
+  title: "Intelligent Energy Demand Forecasting and Probabilistic Peak Load Prediction"
+  version: "1.0.0"
+  description: "Production-grade multi-horizon electricity demand forecasting and quantile peak risk prediction"
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  default_dataset: "data/raw/PJME_hourly.csv"
+  timestamp_col: "timestamp"
+  consumption_col: "consumption"
+  raw_timestamp_candidates: ["Datetime", "datetime", "timestamp", "Timestamp", "Date", "DATE", "time", "Time"]
+  raw_consumption_candidates: ["PJME_MW", "consumption", "MW", "Load", "load", "demand", "Demand", "Power", "power", "AEP_MW", "COMED_MW", "DAYTON_MW"]
+  sampling_frequency: "1h"
+  holiday_country: "US"
+  holiday_subdiv: "PA" # PJM covers Pennsylvania-New Jersey-Maryland
+
+features:
+  calendar:
+    include_hour: true
+    include_dayofweek: true
+    include_dayofmonth: true
+    include_month: true
+    include_quarter: true
+    include_year: true
+    include_weekend: true
+    include_holiday: true
+  cyclical:
+    - col: "hour"
+      period: 24
+    - col: "dayofweek"
+      period: 7
+    - col: "month"
+      period: 12
+  lags: [1, 2, 24, 48, 168]
+  rolling_windows:
+    - window: 24
+      stats: ["mean", "std"]
+    - window: 168
+      stats: ["mean", "std"]
+
+validation:
+  test_horizon_hours: 720   # 30 days holdout test set
+  val_horizon_hours: 720    # 30 days validation set
+  cv_n_splits: 4
+  cv_horizon_hours: 168     # 7 days per backtesting split
+  evaluation_horizons: [24, 48, 168] # Multi-step horizons
+
+models:
+  seasonal_naive:
+    daily_lag: 24
+    weekly_lag: 168
+  prophet:
+    daily_seasonality: true
+    weekly_seasonality: true
+    yearly_seasonality: true
+    changepoint_prior_scale: 0.05
+    seasonality_prior_scale: 10.0
+  lightgbm:
+    n_estimators: 300
+    learning_rate: 0.05
+    max_depth: 8
+    num_leaves: 63
+    subsample: 0.8
+    colsample_bytree: 0.8
+    random_state: 42
+    n_jobs: -1
+  quantiles: [0.10, 0.50, 0.90]
+
+peak_detection:
+  default_percentile: 90.0
+  critical_percentile: 95.0
+  warning_lead_hours: 24
+

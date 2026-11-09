@@ -1,0 +1,105 @@
+{
+  "test_period_start": "2018-07-04 01:00:00",
+  "test_period_end": "2018-08-03 00:00:00",
+  "holdout_hours": 720,
+  "models_evaluated": [
+    {
+      "n_samples": 720,
+      "MAE": 6843.75,
+      "RMSE": 8700.4,
+      "sMAPE": 20.31,
+      "R2": -0.4382,
+      "PICP": 52.36,
+      "MPIW": 11324.52,
+      "Pinball_10": 1147.88,
+      "Pinball_50": 3421.88,
+      "Pinball_90": 2656.78,
+      "model": "Seasonal Naive (168h)"
+    },
+    {
+      "n_samples": 720,
+      "MAE": 7965.1,
+      "RMSE": 9187.71,
+      "sMAPE": 23.44,
+      "R2": -0.6038,
+      "PICP": 35.56,
+      "MPIW": 11742.19,
+      "Pinball_10": 1379.0,
+      "Pinball_50": 3982.55,
+      "Pinball_90": 2822.82,
+      "model": "Prophet"
+    },
+    {
+      "n_samples": 720,
+      "MAE": 341.82,
+      "RMSE": 479.57,
+      "sMAPE": 0.93,
+      "R2": 0.9956,
+      "model": "LightGBM Point"
+    },
+    {
+      "n_samples": 720,
+      "MAE": 392.53,
+      "RMSE": 557.18,
+      "sMAPE": 1.07,
+      "R2": 0.9941,
+      "PICP": 82.22,
+      "MPIW": 1462.37,
+      "Pinball_10": 106.9,
+      "Pinball_50": 196.26,
+      "Pinball_90": 92.34,
+      "model": "LightGBM Quantile (80% Interval)"
+    }
+  ],
+  "horizon_breakdown": {
+    "24h": {
+      "n_samples": 24,
+      "MAE": 642.43,
+      "RMSE": 753.14,
+      "sMAPE": 1.7,
+      "R2": 0.9848,
+      "PICP": 75.0,
+      "MPIW": 1867.96,
+      "Pinball_10": 174.14,
+      "Pinball_50": 321.21,
+      "Pinball_90": 114.09
+    },
+    "48h": {
+      "n_samples": 48,
+      "MAE": 571.65,
+      "RMSE": 673.9,
+      "sMAPE": 1.44,
+      "R2": 0.9912,
+      "PICP": 77.08,
+      "MPIW": 1983.28,
+      "Pinball_10": 173.53,
+      "Pinball_50": 285.83,
+      "Pinball_90": 96.18
+    },
+    "168h": {
+      "n_samples": 168,
+      "MAE": 518.13,
+      "RMSE": 634.3,
+      "sMAPE": 1.46,
+      "R2": 0.9942,
+      "PICP": 79.76,
+      "MPIW": 1733.14,
+      "Pinball_10": 128.72,
+      "Pinball_50": 259.07,
+      "Pinball_90": 94.34
+    },
+    "720h": {
+      "n_samples": 720,
+      "MAE": 392.53,
+      "RMSE": 557.18,
+      "sMAPE": 1.07,
+      "R2": 0.9941,
+      "PICP": 82.22,
+      "MPIW": 1462.37,
+      "Pinball_10": 106.9,
+      "Pinball_50": 196.26,
+      "Pinball_90": 92.34
+    }
+  },
+  "conformal_calibration_offset_mw": 131.82
+}
