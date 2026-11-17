@@ -1,5 +1,5 @@
 """
-Page 4: Demand Forecasting & Multi-Horizon Inference
+Page 4: Demand Forecasting, Custom Uploads & Multi-Horizon Inference
 Members 4 & 6: ML & Integration Leads
 """
 
@@ -10,21 +10,40 @@ import plotly.graph_objects as go
 from src.forecasting.inference import EnergyForecastingEngine
 from src.evaluation.metrics import evaluate_forecast
 from src.analytics.peak_detection import PeakDemandAnalyzer
-from src.utils.helpers import format_mw
+from src.utils.helpers import format_mw, apply_dark_theme
+from src.utils.session_state import (
+    get_active_dataset,
+    process_custom_csv_upload,
+)
 
 
 def render_forecasting():
     st.title("🔮 Multi-Step Demand Forecasting & Uncertainty Intervals")
     st.markdown("Generate real-time multi-horizon electricity consumption forecasts with probabilistic upper and lower prediction bounds.")
 
-    try:
-        df = pd.read_csv("data/processed/clean_consumption.csv")
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
-    except Exception as e:
-        st.error(f"Please ensure clean dataset is available: {e}")
-        return
+    df, dataset_info = get_active_dataset()
 
-    # Configuration Controls
+    # SECTION 1: Forecasting Context & Custom Upload
+    st.subheader(f"1. Target Dataset: {dataset_info['name']}")
+    with st.expander("⬆️ Upload Alternate Context or Test Dataset for Forecasting", expanded=False):
+        uploaded_context = st.file_uploader(
+            "Upload Time-Series CSV to forecast from:",
+            type=["csv"],
+            key="forecast_page_custom_uploader",
+            help="Upload a custom series of past observations to generate forward forecasts."
+        )
+        if uploaded_context is not None:
+            if st.button("Apply to Forecasting Session", key="btn_apply_forecast_data", type="primary"):
+                try:
+                    clean_df, audit, info = process_custom_csv_upload(
+                        uploaded_context, custom_name=f"Custom: {uploaded_context.name}"
+                    )
+                    st.success(f"Loaded {len(clean_df):,} records for forecasting context!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error loading custom forecast context: {e}")
+
+    # SECTION 2: Configuration Controls
     col_c1, col_c2, col_c3 = st.columns(3)
     with col_c1:
         model_choice = st.selectbox(
@@ -46,14 +65,16 @@ def render_forecasting():
     engine = EnergyForecastingEngine()
     analyzer = PeakDemandAnalyzer()
 
-    # Define training and testing datasets
+    # Define training and testing datasets based on active data
+    max_history = min(15000, len(df))
     if eval_mode == "Holdout Test Evaluation (Compare vs Ground Truth)":
-        # Reserve last `horizon_choice` hours for testing
-        train_data = df.iloc[:-horizon_choice].tail(15000).reset_index(drop=True)
+        if len(df) <= horizon_choice + 168:
+            st.warning(f"Dataset has only {len(df)} records. Need at least {horizon_choice + 168} records for holdout evaluation.")
+            return
+        train_data = df.iloc[:-horizon_choice].tail(max_history).reset_index(drop=True)
         actual_test = df.iloc[-horizon_choice:].reset_index(drop=True)
     else:
-        # Train on recent data and forecast into the true future
-        train_data = df.tail(15000).reset_index(drop=True)
+        train_data = df.tail(max_history).reset_index(drop=True)
         actual_test = None
 
     forecast_btn = st.button("⚡ Generate Forecast", type="primary")
@@ -76,8 +97,9 @@ def render_forecasting():
                         actual_df=actual_test,
                     )
                 else:  # Prophet
+                    prophet_len = min(6000, len(train_data))
                     forecast_df = engine.forecast_prophet(
-                        train_df=train_data.tail(6000),
+                        train_df=train_data.tail(prophet_len),
                         horizon=horizon_choice,
                         actual_df=actual_test,
                     )
@@ -115,7 +137,7 @@ def render_forecasting():
         fig.add_trace(go.Scatter(
             x=context_tail["timestamp"], y=context_tail["consumption"],
             mode="lines", name="Historical Context",
-            line=dict(color="#7f7f7f", width=1.5, dash="dot"),
+            line=dict(color="#94a3b8", width=1.5, dash="dot"),
         ))
 
         # Upper bound (invisible line to anchor fill)
@@ -129,14 +151,14 @@ def render_forecasting():
         fig.add_trace(go.Scatter(
             x=forecast_df["timestamp"], y=forecast_df["lower_bound"],
             mode="lines", line=dict(width=0), fill="tonexty",
-            fillcolor="rgba(31, 119, 180, 0.22)", name="80% Prediction Interval [10th-90th]",
+            fillcolor="rgba(56, 189, 248, 0.22)", name="80% Prediction Interval [10th-90th]",
         ))
 
         # Median / Central Forecast
         fig.add_trace(go.Scatter(
             x=forecast_df["timestamp"], y=forecast_df["predicted"],
             mode="lines+markers", name="Predicted Demand (50th / Median)",
-            line=dict(color="#1f77b4", width=2.5),
+            line=dict(color="#38bdf8", width=2.5),
             marker=dict(size=4),
         ))
 
@@ -145,7 +167,7 @@ def render_forecasting():
             fig.add_trace(go.Scatter(
                 x=forecast_df["timestamp"], y=forecast_df["actual"],
                 mode="lines+markers", name="Actual Demand (Ground Truth)",
-                line=dict(color="#2ca02c", width=2.0),
+                line=dict(color="#34d399", width=2.0),
                 marker=dict(size=4, symbol="circle-open"),
             ))
 
@@ -155,14 +177,15 @@ def render_forecasting():
             mode="markers+text", name="Predicted Peak",
             text=[f"Peak: {format_mw(peak_val)}"],
             textposition="top center",
-            marker=dict(color="#d62728", size=11, symbol="star"),
+            marker=dict(color="#ef4444", size=11, symbol="star"),
         ))
 
         fig.update_layout(
             title=f"Electricity Demand Forecast: {model_choice} ({horizon_choice} Hours Ahead)",
             xaxis_title="Timeline", yaxis_title="Demand (Megawatts)",
-            template="plotly_white", height=480, hovermode="x unified",
+            height=480, hovermode="x unified",
         )
+        apply_dark_theme(fig)
         st.plotly_chart(fig, use_container_width=True)
 
         # Tabular View and CSV Export
@@ -182,4 +205,3 @@ def render_forecasting():
             file_name=f"electricity_demand_forecast_{horizon_choice}h.csv",
             mime="text/csv",
         )
-

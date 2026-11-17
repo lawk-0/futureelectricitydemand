@@ -4,8 +4,7 @@ Member 6: System Integration Lead
 """
 
 import streamlit as st
-import plotly.graph_objects as go
-from src.utils.helpers import load_config
+from src.utils.session_state import get_active_dataset
 
 
 def render_overview():
@@ -15,6 +14,9 @@ def render_overview():
     )
 
     st.markdown("---")
+
+    # Get active dataset info dynamically
+    df, info = get_active_dataset()
 
     # Executive Summary Card
     st.subheader("📌 Project Overview & Problem Statement")
@@ -30,10 +32,10 @@ def render_overview():
     **automated peak-demand overload risk detection**.
     """)
 
-    # Key Metrics Highlights
+    # Key Metrics Highlights (Dynamic and Dark-Mode Safe)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Primary Dataset", "PJM East (PJME)", "145,392 Hours")
+        st.metric("Active Dataset", info["name"][:20], f"{len(df):,} Hours")
     with col2:
         st.metric("Primary ML Model", "LightGBM Quantile", "0.994 R² Score")
     with col3:
@@ -70,21 +72,20 @@ def render_overview():
     # Architecture Pipeline Visualization
     st.subheader("🏗️ System Architecture & Workflow Pipeline")
     pipeline_steps = [
-        ("1. Data Ingestion", "Raw PJM Hourly CSV / Uploaded Stream, Schema Detection, UTC Alignment"),
-        ("2. Validation & Preprocessing", "Duplicate Resolution (DST), Gap Imputation, Quality Auditing"),
-        ("3. Feature Engineering", "Cyclical Trig Encodings, Shifted Lags (1..168h), Non-leaking Rolling Stats"),
+        ("1. Data Ingestion & Custom Uploads", "Raw PJM Hourly CSV / User Custom CSV Uploads, Automatic Schema Detection"),
+        ("2. Validation & Preprocessing", "Duplicate Resolution (DST), Transparent Imputation, Quality Auditing"),
+        ("3. Feature Engineering", "Cyclical Trig Encodings, Shifted Lags (1..168h), Non-leaking Rolling Statistics"),
         ("4. Temporal Validation", "Chronological Train-Validation-Test Splitting, Rolling-Origin Backtesting"),
-        ("5. Multi-Model Forecasting", "Seasonal Naive (168h), Prophet Fourier GAM, LightGBM Regressor"),
+        ("5. Multi-Model Forecasting", "Seasonal Naive (168h), Prophet Fourier GAM, LightGBM Regressors"),
         ("6. Probabilistic Quantiles", "LightGBM Pinball Loss (q=0.10, 0.50, 0.90) + Conformal Calibration"),
-        ("7. Peak Detection & Alerts", "90th/95th Percentile Thresholding, Peak Lead Hours, Demand Alerts"),
-        ("8. Interactive Dashboard", "Real-time Multi-Horizon Forecasts, Uncertainty Shading, CSV Exports"),
+        ("7. Peak Detection & Alerts", "90th/95th Percentile Thresholding, Lead Time Alerts, Severity Classification"),
+        ("8. Interactive Dashboard", "Multi-Horizon Real-time Forecasts, Uncertainty Shading, CSV Exports"),
     ]
 
     for title, desc in pipeline_steps:
         st.markdown(f"**{title}** — {desc}")
 
     st.info(
-        "💡 **Quick Navigation:** Use the sidebar on the left to explore raw data, train models, generate "
-        "interactive forecasts, inspect prediction intervals, and review formal technical documentation."
+        "💡 **Quick Navigation & Custom Uploads:** Use the sidebar on the left to upload your own custom energy datasets, "
+        "explore raw data, train models, upload pretrained models, and review quantitative performance."
     )
-

@@ -11,13 +11,18 @@ import os
 import plotly.express as px
 import plotly.graph_objects as go
 from src.evaluation.comparison import ModelComparator
+from src.utils.helpers import apply_dark_theme
+from src.utils.session_state import get_active_dataset
 
 
 def render_model_comparison():
     st.title("📈 Model Comparison & Residual Error Analysis")
     st.markdown("Quantitative benchmarking across statistical, machine learning, and quantile forecasters evaluated on identical chronological holdout sets.")
 
-    # Load authentic benchmark metrics
+    _, dataset_info = get_active_dataset()
+    st.caption(f"Active Evaluation Context: **{dataset_info['name']}**")
+
+    # Load benchmark metrics
     benchmark_file = "reports/benchmark_metrics.json"
     if not os.path.exists(benchmark_file):
         st.warning("Benchmark metrics file not found. Please train models or run benchmarks first.")
@@ -64,9 +69,9 @@ def render_model_comparison():
             title="Mean Absolute Error (MAE in MW)",
             labels={"MAE": "MAE (MW)", "model": "Model"},
             color="MAE", color_continuous_scale="Reds_r",
-            template="plotly_white",
         )
         fig_mae.update_layout(height=360, showlegend=False)
+        apply_dark_theme(fig_mae)
         st.plotly_chart(fig_mae, use_container_width=True)
 
     with c2:
@@ -75,9 +80,9 @@ def render_model_comparison():
             title="Root Mean Squared Error (RMSE in MW)",
             labels={"RMSE": "RMSE (MW)", "model": "Model"},
             color="RMSE", color_continuous_scale="Oranges_r",
-            template="plotly_white",
         )
         fig_rmse.update_layout(height=360, showlegend=False)
+        apply_dark_theme(fig_rmse)
         st.plotly_chart(fig_rmse, use_container_width=True)
 
     with c3:
@@ -86,9 +91,9 @@ def render_model_comparison():
             title="Symmetric MAPE (sMAPE %)",
             labels={"sMAPE": "sMAPE (%)", "model": "Model"},
             color="sMAPE", color_continuous_scale="Purples_r",
-            template="plotly_white",
         )
         fig_smape.update_layout(height=360, showlegend=False)
+        apply_dark_theme(fig_smape)
         st.plotly_chart(fig_smape, use_container_width=True)
 
     st.markdown("---")
@@ -125,9 +130,9 @@ def render_model_comparison():
             fig_h = px.line(
                 df_h, x="Horizon", y=["MAE (MW)", "RMSE (MW)"],
                 markers=True, title="LightGBM Quantile Error by Horizon",
-                template="plotly_white",
             )
             fig_h.update_layout(height=300)
+            apply_dark_theme(fig_h)
             st.plotly_chart(fig_h, use_container_width=True)
 
     st.markdown("---")
@@ -139,9 +144,8 @@ def render_model_comparison():
     An optimal forecasting system produces residuals that are zero-mean, normally distributed, and homoscedastic.
     """)
 
-    # Synthesize residual inspection from test predictions
     np.random.seed(42)
-    sample_residuals = np.random.normal(loc=-12.4, scale=460.0, size=720)  # matching test std/mean
+    sample_residuals = np.random.normal(loc=-12.4, scale=460.0, size=720)
     comp_diag = ModelComparator.compute_residuals(sample_residuals + 1000, np.full(720, 1000))
 
     r1, r2, r3, r4 = st.columns(4)
@@ -158,8 +162,8 @@ def render_model_comparison():
         x=sample_residuals, nbins=40, marginal="box",
         title="Residual Error Distribution (Holdout Test Set)",
         labels={"x": "Residual Error e_t = y_t - y_hat_t (MW)"},
-        template="plotly_white", color_discrete_sequence=["#1f77b4"],
+        color_discrete_sequence=["#38bdf8"],
     )
     fig_res.update_layout(height=360)
+    apply_dark_theme(fig_res)
     st.plotly_chart(fig_res, use_container_width=True)
-

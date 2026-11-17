@@ -1,5 +1,6 @@
 """
-Helper utilities: configuration loading, logging, serialization, and formatting.
+Helper utilities: configuration loading, logging, serialization, formatting,
+and chart theme styling.
 """
 
 import os
@@ -74,3 +75,25 @@ def format_mw(val: float) -> str:
     """Formats numeric energy demand in Megawatts with commas."""
     return f"{val:,.1f} MW"
 
+
+def apply_dark_theme(fig) -> Any:
+    """
+    Applies a clean, dark-mode compatible aesthetic to Plotly figures.
+    Removes jarring white backgrounds and aligns with the application slate theme.
+    """
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(15, 23, 42, 0.45)",
+        font=dict(color="#f8fafc", family="sans-serif"),
+        xaxis=dict(
+            gridcolor="rgba(148, 163, 184, 0.15)",
+            zerolinecolor="rgba(148, 163, 184, 0.2)",
+        ),
+        yaxis=dict(
+            gridcolor="rgba(148, 163, 184, 0.15)",
+            zerolinecolor="rgba(148, 163, 184, 0.2)",
+        ),
+        margin=dict(l=40, r=40, t=50, b=40),
+    )
+    return fig

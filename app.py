@@ -22,24 +22,73 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom styling for academic/professional presentation
+# Custom styling for academic/professional presentation & dark-mode safety
 st.markdown("""
 <style>
+    /* Main layout container */
     .main .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
+        padding-top: 2.2rem;
+        padding-bottom: 3rem;
+        max-width: 96%;
     }
-    .stMetric {
-        background-color: #f8f9fa;
-        padding: 0.8rem 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #1f77b4;
+
+    /* Metric Cards - Sleek Slate Dark Mode with High Contrast */
+    [data-testid="stMetric"], .stMetric {
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+        padding: 0.9rem 1.15rem !important;
+        border-radius: 10px !important;
+        border-left: 5px solid #38bdf8 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
     }
+    [data-testid="stMetricLabel"] p, [data-testid="stMetricLabel"] {
+        color: #94a3b8 !important;
+        font-weight: 500 !important;
+        font-size: 0.95rem !important;
+        margin-bottom: 0.2rem !important;
+    }
+    [data-testid="stMetricValue"] div, [data-testid="stMetricValue"] {
+        color: #f8fafc !important;
+        font-weight: 700 !important;
+        font-size: 1.55rem !important;
+    }
+    [data-testid="stMetricDelta"] div, [data-testid="stMetricDelta"] {
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* Custom Cards */
+    .info-card {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Expander header styling */
+    .streamlit-expanderHeader {
+        background-color: #1e293b !important;
+        border-radius: 8px !important;
+    }
+
+    /* Sidebar navigation aesthetics */
     div[data-testid="stSidebarNav"] {
-        padding-top: 1rem;
+        padding-top: 0.5rem;
+    }
+
+    /* Headers crisp contrast */
+    h1, h2, h3, h4 {
+        color: #f8fafc !important;
     }
 </style>
 """, unsafe_allow_html=True)
+
+# Import session state & dataset manager
+from src.utils.session_state import (
+    get_active_dataset,
+    render_sidebar_dataset_selector,
+)
 
 # Import dashboard pages
 from dashboard.overview import render_overview
@@ -55,6 +104,11 @@ from dashboard.technical_info import render_technical_info
 def main():
     st.sidebar.title("⚡ Energy Forecaster")
     st.sidebar.caption("B.Tech Capstone Project — University CSE")
+    st.sidebar.markdown("---")
+
+    # Persistent Dataset Selector & Custom Uploader in Sidebar
+    render_sidebar_dataset_selector()
+
     st.sidebar.markdown("---")
 
     # Navigation menu
@@ -74,10 +128,17 @@ def main():
     )
 
     st.sidebar.markdown("---")
+    
+    # Dynamic System & Model Status
+    _, active_info = get_active_dataset()
+    has_custom_model = "trained_quantile_model" in st.session_state or "trained_point_model" in st.session_state
+    model_status_label = "🟢 Custom / Active in Session" if has_custom_model else "🔵 Pretrained Baseline Loaded"
+
     st.sidebar.markdown(
-        "**System Status:** 🟢 All Modules Operational\n\n"
-        "**Dataset:** PJM East (145k Records)\n\n"
-        "**Quantile Models:** Loaded & Calibrated"
+        f"**System Status:** 🟢 All Modules Active\n\n"
+        f"**Active Data:** {active_info['name']}\n\n"
+        f"**Records:** {active_info['records']:,} Hours\n\n"
+        f"**Model Engine:** {model_status_label}"
     )
 
     # Dispatch to selected page
@@ -101,4 +162,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

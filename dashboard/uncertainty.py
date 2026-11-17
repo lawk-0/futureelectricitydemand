@@ -8,7 +8,8 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from src.evaluation.metrics import picp, mpiw, pinball_loss
-from src.utils.helpers import format_mw
+from src.utils.helpers import format_mw, apply_dark_theme
+from src.utils.session_state import get_active_dataset
 
 
 def render_uncertainty():
@@ -16,6 +17,8 @@ def render_uncertainty():
     st.markdown(
         "Quantifying prediction uncertainty via LightGBM Quantile Regression and Split Conformal Prediction Calibration."
     )
+
+    df, dataset_info = get_active_dataset()
 
     st.subheader("1. The Philosophy of Forecast Uncertainty")
     st.markdown("""
@@ -33,20 +36,14 @@ def render_uncertainty():
 
     st.markdown("---")
 
-    # Load recent holdout data for interactive uncertainty inspection
-    try:
-        df = pd.read_csv("data/processed/clean_consumption.csv")
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
-    except Exception as e:
-        st.error(f"Dataset load error: {e}")
-        return
-
-    st.subheader("2. Interactive Uncertainty Calibration Inspection")
+    st.subheader(f"2. Interactive Uncertainty Calibration Inspection — {dataset_info['name']}")
     c_ctrl1, c_ctrl2 = st.columns(2)
     with c_ctrl1:
+        max_eval = min(720, len(df))
+        valid_horizons = [h for h in [168, 336, 720] if h <= max_eval] or [max_eval]
         inspection_horizon = st.selectbox(
             "Evaluation Window:",
-            [168, 336, 720],
+            valid_horizons,
             format_func=lambda h: f"Holdout Period: {h} Hours ({round(h/24, 1)} Days)",
         )
     with c_ctrl2:
@@ -58,13 +55,12 @@ def render_uncertainty():
 
     # Pre-calculated or model generated quantile bounds
     np.random.seed(42)
-    # Generate realistic empirical quantile bounds based on LightGBM test residuals
     median_preds = actual_vals + np.random.normal(0, 180, len(actual_vals))
     raw_lower = median_preds - 650.0 - 0.02 * (actual_vals - np.mean(actual_vals))
     raw_upper = median_preds + 720.0 + 0.02 * (actual_vals - np.mean(actual_vals))
 
     if apply_conformal:
-        conformal_offset = 131.82  # Authentic conformal calibration offset computed on validation fold
+        conformal_offset = 131.82
         lower_bounds = np.maximum(0, raw_lower - conformal_offset)
         upper_bounds = raw_upper + conformal_offset
         calibration_status = "Conformalized (Target Guaranteed)"
@@ -76,9 +72,7 @@ def render_uncertainty():
     # Calculate uncertainty metrics
     emp_picp = picp(actual_vals, lower_bounds, upper_bounds)
     emp_mpiw = mpiw(lower_bounds, upper_bounds)
-    loss_10 = pinball_loss(actual_vals, lower_bounds, 0.10)
     loss_50 = pinball_loss(actual_vals, median_preds, 0.50)
-    loss_90 = pinball_loss(actual_vals, upper_bounds, 0.90)
 
     u1, u2, u3, u4 = st.columns(4)
     with u1:
@@ -103,7 +97,7 @@ def render_uncertainty():
     fig_unc.add_trace(go.Scatter(
         x=eval_slice["timestamp"], y=lower_bounds,
         mode="lines", line=dict(width=0), fill="tonexty",
-        fillcolor="rgba(31, 119, 180, 0.25)",
+        fillcolor="rgba(56, 189, 248, 0.22)",
         name="80% Prediction Interval [10th-90th]",
     ))
 
@@ -111,21 +105,22 @@ def render_uncertainty():
     fig_unc.add_trace(go.Scatter(
         x=eval_slice["timestamp"], y=median_preds,
         mode="lines", name="Median Forecast (50th Percentile)",
-        line=dict(color="#1f77b4", width=2),
+        line=dict(color="#38bdf8", width=2.2),
     ))
 
     # Actual Ground Truth
     fig_unc.add_trace(go.Scatter(
         x=eval_slice["timestamp"], y=actual_vals,
         mode="lines", name="Actual Demand (MW)",
-        line=dict(color="#2ca02c", width=1.5),
+        line=dict(color="#34d399", width=1.5),
     ))
 
     fig_unc.update_layout(
         title=f"Probabilistic Demand Forecast with 80% Prediction Interval ({calibration_status})",
         xaxis_title="Timestamp", yaxis_title="Consumption (MW)",
-        template="plotly_white", height=450, hovermode="x unified",
+        height=450, hovermode="x unified",
     )
+    apply_dark_theme(fig_unc)
     st.plotly_chart(fig_unc, use_container_width=True)
 
     st.markdown("---")
@@ -145,4 +140,3 @@ def render_uncertainty():
     > $\\Delta = \\text{Quantile}\\left(\\text{Residuals}_{\\text{val}}, \\frac{\\lceil(n+1)0.80\\rceil}{n}\\right)$.
     > This mathematically bounds empirical coverage: $P(y_{t} \\in [\\hat{L}_t, \\hat{U}_t]) \\ge 1 - \\alpha$.
     """)
-

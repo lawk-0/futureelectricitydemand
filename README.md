@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28%2B-FF4B4B.svg)](https://streamlit.io/)
 [![LightGBM](https://img.shields.io/badge/LightGBM-4.0%2B-brightgreen.svg)](https://lightgbm.readthedocs.io/)
-[![Tests Passing](https://img.shields.io/badge/tests-21%2F21%20passing-success.svg)](https://docs.pytest.org/)
+[![Tests Passing](https://img.shields.io/badge/tests-24%2F24%20passing-success.svg)](https://docs.pytest.org/)
 
 A university-level B.Tech Computer Science and Engineering final year capstone project. Designed as a production-grade, reproducible, modular, and defensible machine learning platform that forecasts future hourly electricity consumption, quantifies forecast uncertainty through **LightGBM Quantile Regression and Split Conformal Calibration**, and detects high-demand grid overload risks.
 
@@ -118,11 +118,11 @@ pip install -r requirements.txt
 ```
 
 ### 3. Run Automated Tests
-Execute the complete test suite to verify data integrity, leakage prevention, and model monotonicity:
+Execute the complete test suite to verify data integrity, leakage prevention, custom uploadables, and model monotonicity:
 ```bash
 pytest -v
 ```
-*Result: 21 passing tests in <3 seconds.*
+*Result: 24 passing tests in <3 seconds.*
 
 ### 4. Launch the Interactive Dashboard
 Start the Streamlit web application:
@@ -130,6 +130,16 @@ Start the Streamlit web application:
 streamlit run app.py
 ```
 Open your browser at `http://localhost:8501`.
+
+---
+
+## 📁 Custom Uploadables Supported Throughout the Platform
+
+1. **Persistent Sidebar Dataset Ingestion:** Upload any custom CSV directly from the sidebar. The dataset is automatically validated, regularized, and becomes the active dataset across all 8 pages.
+2. **In-Page Data Explorer Uploader:** Upload and audit any energy time-series CSV with automatic timestamp and load column mapping.
+3. **Custom Model Artifact Ingestion:** Upload previously trained custom `.joblib` model artifacts on the Model Training page to forecast with them immediately.
+4. **Custom Evaluation Context Ingestion:** Upload custom past history or test observation streams on the Demand Forecasting page.
+5. **One-Click Prediction Export:** Export multi-horizon forecasts with 80% upper and lower prediction bounds to CSV.
 
 ---
 
